@@ -210,6 +210,7 @@ main(int argc, char **argv)
     if(result != KMIP_OK)
     {
         fprintf(stderr, "Encryption failed with error code: %d\n", result);
+        kmip_print_error_string(stderr, result);
         BIO_free_all(bio);
         return(1);
     }
