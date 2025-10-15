@@ -1,0 +1,84 @@
+---
+name: Build libkmip
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: libkmip
+
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config
+
+      - name: Build libkmip
+        run: |
+          cd libkmip
+          make
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkmip-demos
+          path: libkmip/bin
+          if-no-files-found: error
+          retention-days: 7
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install libffi-dev libssl-dev libsqlite3-dev gawk
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: irq0/pykmip-test-server
+          path: pykmip-test-server
+
+      - name: Install the project
+        run: cd pykmip-test-server && uv sync --locked --all-extras --dev
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: libkmip-demos
+          path: demos
+
+      - name: make executable
+        run: chmod +x demos/*
+
+      - name: run
+        run: |
+          set -x
+          set -e
+
+          on_exit () {
+               set +e
+               set +x
+               echo "---- server.log"
+               cat pykmip-test-server/server.log
+               echo "---- server.stdouterr.log"
+               cat server.stdouterr.log
+               echo "---- create.log"
+               cat create.log
+          }
+          trap on_exit EXIT
+
+          (cd pykmip-test-server && uv run server.py &> ../server.stdouterr.log) &
+          sleep 5
+
+          demos/demo_create -a localhost -c pykmip-test-server/snakeoil.crt -k pykmip-test-server/snakeoil.key -p 5696 -r pykmip-test-server/snakeoil.crt &> create.log
+          id="$(awk '/Symmetric Key ID:/ { print $4 }' create.log)"
+
+          kill %1
+          jobs
+          wait
