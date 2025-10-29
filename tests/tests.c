@@ -819,6 +819,118 @@ test_peek_tag(TestTracker *tracker)
 }
 
 int
+test_skip_tag(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    /* Build encoding with different tags and verify that it jumps each tag correctly.
+     *
+     * Tag: Unique Identifier (0x420094), Type: Text String (0x07), Data: 668eff89-3010-4258-bc0e-8c402309c746
+     * 420094 07 00000024 36363865666638392D333031302D343235382D626330652D38633430323330396337343600000000
+     *
+     * Tag: Attribute Value (0x42000B), Type: Enumeration (0x05), Data: 0x00000004 (Compromised)
+     * 42000B 05 00000004 0000000400000000
+     *
+     * Tag: Attribute Name (0x42000A), Type: Text String (0x07), Data: Cryptographic Length
+     * 42000A 07 00000014 43727970746F67726170686963204C656E67746800000000
+     *
+     * Tag: Time Stamp (0x420092), Type: Date-Time (0x09), Data: 0x000000004F9A54E8 (Fri Apr 27 10:12:24 CEST 2012)
+     * 420092 09 00000008 000000004F9A54E8
+     *
+     * Tag: Key Material (0x420043), Type: Byte String (0x08), Data: 9C7D7C4FD2076F1909A6BA4342CAB1DE
+     * 420043 08 00000010 9C7D7C4FD2076F1909A6BA4342CAB1DE
+     *
+     * Tag: Cryptographic Length (0x42002A), Type: Integer (0x02), Data: 0x00000080 (128)
+     * 42002A 02 00000004 0000008000000000
+     *
+     */
+
+    uint8 encoding[] = {
+        0x42, 0x00, 0x94,    0x07,    0x00, 0x00, 0x00, 0x24,    0x36, 0x36, 0x38, 0x65, 0x66, 0x66, 0x38, 0x39, 0x2D, 0x33, 0x30, 0x31, 0x30, 0x2D, 0x34, 0x32, 0x35, 0x38, 0x2D, 0x62, 0x63, 0x30, 0x65, 0x2D, 0x38, 0x63, 0x34, 0x30, 0x32, 0x33, 0x30, 0x39, 0x63, 0x37, 0x34, 0x36, 0x00, 0x00, 0x00, 0x00,
+        0x42, 0x00, 0x0B,    0x05,    0x00, 0x00, 0x00, 0x04,    0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
+        0x42, 0x00, 0x0A,    0x07,    0x00, 0x00, 0x00, 0x14,    0x43, 0x72, 0x79, 0x70, 0x74, 0x6F, 0x67, 0x72, 0x61, 0x70, 0x68, 0x69, 0x63, 0x20, 0x4C, 0x65, 0x6E, 0x67, 0x74, 0x68, 0x00, 0x00, 0x00, 0x00,
+        0x42, 0x00, 0x92,    0x09,    0x00, 0x00, 0x00, 0x08,    0x00, 0x00, 0x00, 0x00, 0x4F, 0x9A, 0x54, 0xE8,
+        0x42, 0x00, 0x43,    0x08,    0x00, 0x00, 0x00, 0x10,    0x9C, 0x7D, 0x7C, 0x4F, 0xD2, 0x07, 0x6F, 0x19, 0x09, 0xA6, 0xBA, 0x43, 0x42, 0xCA, 0xB1, 0xDE,
+        0x42, 0x00, 0x2A,    0x02,    0x00, 0x00, 0x00, 0x04,    0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
+        0xFF
+    }; 
+
+
+    int result = 0;
+    uint32 tag = 0;
+    uint8 *prev_buffer = NULL;
+    uint8 *prev_index = NULL;
+    size_t prev_size = 0;
+    KMIP ctx = {0};
+    kmip_init(&ctx, encoding, ARRAY_LENGTH(encoding), KMIP_1_0);
+
+    prev_buffer = ctx.buffer;
+    prev_index = ctx.index;
+    prev_size = ctx.size;
+    result = kmip_skip_tag(&ctx);
+    tag = *ctx.index;
+    if(result != KMIP_TRUE || ctx.buffer != prev_buffer || ctx.index != (prev_index+48) || ctx.size != prev_size || tag != 0x42)
+    {
+        TEST_FAILED(tracker, __func__, __LINE__);
+    }
+
+    prev_buffer = ctx.buffer;
+    prev_index = ctx.index;
+    prev_size = ctx.size;
+    result = kmip_skip_tag(&ctx);
+    tag = *ctx.index;
+    if(result != KMIP_TRUE || ctx.buffer != prev_buffer || ctx.index != (prev_index+16) || ctx.size != prev_size || tag != 0x42)
+    {
+        TEST_FAILED(tracker, __func__, __LINE__);
+    }
+
+    prev_buffer = ctx.buffer;
+    prev_index = ctx.index;
+    prev_size = ctx.size;
+    result = kmip_skip_tag(&ctx);
+    tag = *ctx.index;
+    if(result != KMIP_TRUE || ctx.buffer != prev_buffer || ctx.index != (prev_index+32) || ctx.size != prev_size || tag != 0x42)
+    {
+        TEST_FAILED(tracker, __func__, __LINE__);
+    }
+
+    prev_buffer = ctx.buffer;
+    prev_index = ctx.index;
+    prev_size = ctx.size;
+    result = kmip_skip_tag(&ctx);
+    tag = *ctx.index;
+    if(result != KMIP_TRUE || ctx.buffer != prev_buffer || ctx.index != (prev_index+16) || ctx.size != prev_size || tag != 0x42)
+    {
+        TEST_FAILED(tracker, __func__, __LINE__);
+    }
+
+    prev_buffer = ctx.buffer;
+    prev_index = ctx.index;
+    prev_size = ctx.size;
+    result = kmip_skip_tag(&ctx);
+    tag = *ctx.index;
+    if(result != KMIP_TRUE || ctx.buffer != prev_buffer || ctx.index != (prev_index+24) || ctx.size != prev_size || tag != 0x42)
+    {
+        TEST_FAILED(tracker, __func__, __LINE__);
+    }
+
+    prev_buffer = ctx.buffer;
+    prev_index = ctx.index;
+    prev_size = ctx.size;
+    result = kmip_skip_tag(&ctx);
+    tag = *ctx.index;
+    if(result != KMIP_TRUE || ctx.buffer != prev_buffer || ctx.index != (prev_index+16) || ctx.size != prev_size || tag != 0xFF)
+    {
+        TEST_FAILED(tracker, __func__, __LINE__);
+    }
+
+    kmip_destroy(&ctx);
+
+    TEST_PASSED(tracker, __func__);
+
+}
+
+int
 test_is_attribute_tag(TestTracker *tracker)
 {
     TRACK_TEST(tracker);
@@ -12398,6 +12510,384 @@ test_decode_query_response_payload(TestTracker *tracker)
     return (result);
 }
 
+int
+test_encode_activate_request_payload_NULL(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    // First test is key_uuid=NULL as spec does allow to omit the Unique Identifier
+    // see: https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497527
+
+    // NOTE (fst): pyKMIP server does reject with no Unique Identifier in activate request
+
+    uint8 expected[] = {
+        0x42, 0x00, 0x79,
+        0x01,
+        0x00, 0x00, 0x00, 0x00,
+    };
+
+    uint8 observed[ARRAY_LENGTH(expected)] = {0};
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, observed, ARRAY_LENGTH(observed), KMIP_1_0);
+
+    /* Build Activate Request Payload */
+    ActivateRequestPayload activate_payload = {0};
+    activate_payload.unique_identifier = NULL;
+
+    int result = kmip_encode_activate_request_payload(&ctx, &activate_payload);
+    result = report_encoding_test_result(tracker, &ctx, expected, observed, result, __func__);
+
+    kmip_destroy(&ctx);
+    return(result);
+}
+
+int
+test_encode_activate_request_payload_simple(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    uint8 expected[] = {
+        0x42, 0x00, 0x79,
+        0x01,
+        0x00, 0x00, 0x00, 0x10,
+            0x42, 0x00, 0x94,
+            0x07,
+            0x00, 0x00, 0x00, 0x01,
+            0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    uint8 observed[ARRAY_LENGTH(expected)] = {0};
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, observed, ARRAY_LENGTH(observed), KMIP_1_0);
+
+    /* Build Activate Request Payload */
+    TextString unique_id = {0};
+
+    ActivateRequestPayload activate_payload = {0};
+    activate_payload.unique_identifier = NULL;
+
+    // Now we test with a simple string as UUID
+    char key_uuid[] = "5"; //"fb4b5b9c-6188-4c63-8142-fe9c328129fc";
+
+    // Set unique identifier
+    unique_id.value = key_uuid;
+    unique_id.size = kmip_strnlen_s(key_uuid, 36);
+    activate_payload.unique_identifier = &unique_id;
+
+    int result = kmip_encode_activate_request_payload(&ctx, &activate_payload);
+    result = report_encoding_test_result(tracker, &ctx, expected, observed, result, __func__);
+
+    kmip_destroy(&ctx);
+    return(result);
+}
+
+int
+test_decode_activate_response_payload(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    uint8 encoding[] = {
+        0x42, 0x00, 0x7C,
+        0x01,
+        0x00, 0x00, 0x00, 0x10,
+            0x42, 0x00, 0x94,
+            0x07,
+            0x00, 0x00, 0x00, 0x01,
+            0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, encoding, ARRAY_LENGTH(encoding), KMIP_1_0);
+
+    /* Build Activate Response expected payload */
+    char key_uuid[] = "5";
+
+    TextString unique_id = {0};
+    unique_id.value = key_uuid;
+    unique_id.size = kmip_strnlen_s(key_uuid, 36);
+
+    ActivateResponsePayload expected = {0};
+    expected.unique_identifier = &unique_id;
+
+    ActivateResponsePayload observed = {0};
+
+    int result = kmip_decode_activate_response_payload(&ctx, &observed);
+    int comparison = kmip_compare_activate_response_payload(&expected, &observed);
+    if (!comparison)
+    {
+        kmip_print_activate_response_payload(stderr, 1, &observed);
+        kmip_print_activate_response_payload(stderr, 1, &expected);
+    }
+    result = report_decoding_test_result(tracker, &ctx, comparison, result, __func__);
+
+    kmip_free_activate_response_payload(&ctx, &observed);
+    kmip_destroy(&ctx);
+    return (result);
+}
+
+int
+test_encode_encrypt_request_payload_NULL(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    // First test is key_uuid=NULL as spec does allow to omit the Unique Identifier for encryption
+    // see: https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497543
+
+    uint8 expected[] = {
+        0x42, 0x00, 0x79,
+        0x01,
+        0x00, 0x00, 0x00, 0x88,
+            0x42, 0x00, 0x2b,
+            0x01,
+            0x00, 0x00, 0x00, 0x40,
+                0x42, 0x00, 0x11,
+                0x05,
+                0x00, 0x00, 0x00, 0x04,
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+                0x42, 0x00, 0x5f,
+                0x05,
+                0x00, 0x00, 0x00, 0x04,
+                0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
+                0x42, 0x00, 0x28,
+                0x05,
+                0x00, 0x00, 0x00, 0x04,
+                0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
+                0x42, 0x00, 0xc5,
+                0x06,
+                0x00, 0x00, 0x00, 0x08,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x42, 0x00, 0xc2,
+            0x08,
+            0x00, 0x00, 0x00, 0x33,
+            'H', 'e', 'l', 'l', 'o', ',', ' ', 'K', 'M', 'I', 'P', '!', ' ',
+            'T','h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 't', 'e', 's', 't', ' ',
+            'm', 'e', 's', 's', 'a', 'g', 'e', ' ', 'f', 'o', 'r', ' ',
+            'e', 'n', 'c', 'r', 'y', 'p', 't', 'i', 'o', 'n', '.'
+            ,0,0,0,0, 0 // padding
+    };
+
+    uint8 observed[ARRAY_LENGTH(expected)] = {0};
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, observed, ARRAY_LENGTH(observed), KMIP_1_2);
+
+    /* Test data */
+    const char *plaintext_str = "Hello, KMIP! This is a test message for encryption.";
+    uint8 *plaintext = (uint8 *)plaintext_str;
+    int plaintext_size = kmip_strnlen_s(plaintext_str,256);
+
+    /* Set up cryptographic parameters */
+    CryptographicParameters params = {0};
+    kmip_init_cryptographic_parameters(&params);
+    params.cryptographic_algorithm = KMIP_CRYPTOALG_AES;
+    params.block_cipher_mode = KMIP_BLOCK_CBC;
+    params.padding_method = KMIP_PAD_PKCS5;
+    params.random_iv = KMIP_TRUE;  /* Request server to generate IV */
+
+    /* Build Encrypt Request Payload */
+    ByteString data = {0};
+    data.value = plaintext;
+    data.size = plaintext_size;
+
+    EncryptRequestPayload encrypt_payload = {0};
+    encrypt_payload.unique_identifier = NULL;
+    encrypt_payload.cryptographic_parameters = NULL;
+    encrypt_payload.data = &data;
+    encrypt_payload.iv_counter_nonce = NULL;
+    encrypt_payload.correlation_value = NULL;
+    encrypt_payload.init_indicator = KMIP_UNSET;
+    encrypt_payload.final_indicator = KMIP_UNSET;
+    encrypt_payload.authenticated_encryption_additional_data = NULL;
+
+    // Set crypto parameters
+    encrypt_payload.cryptographic_parameters = &params;
+
+    int result = kmip_encode_encrypt_request_payload(&ctx, &encrypt_payload);
+    result = report_encoding_test_result(tracker, &ctx, expected, observed, result, __func__);
+
+    kmip_destroy(&ctx);
+    return(result);
+}
+
+int
+test_decode_encrypt_response_payload_simple(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    uint8 encoding[] = {
+        0x42, 0x00, 0x7C,
+        0x01,
+        0x00, 0x00, 0x00, 0x10,
+            0x42, 0x00, 0x94,
+            0x07,
+            0x00, 0x00, 0x00, 0x01,
+            0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, encoding, ARRAY_LENGTH(encoding), KMIP_1_0);
+
+    /* Build Encrypt Response expected payload */
+    char key_uuid[] = "5";
+
+    TextString unique_id = {0};
+    unique_id.value = key_uuid;
+    unique_id.size = kmip_strnlen_s(key_uuid, 36);
+
+    EncryptResponsePayload expected = {0};
+    expected.unique_identifier = &unique_id;
+
+    EncryptResponsePayload observed = {0};
+
+    int result = kmip_decode_encrypt_response_payload(&ctx, &observed);
+    int comparison = kmip_compare_encrypt_response_payload(&expected, &observed);
+    if (!comparison)
+    {
+        kmip_print_encrypt_response_payload(stderr, 1, &observed);
+        kmip_print_encrypt_response_payload(stderr, 1, &expected);
+    }
+    result = report_decoding_test_result(tracker, &ctx, comparison, result, __func__);
+
+    kmip_free_encrypt_response_payload(&ctx, &observed);
+    kmip_destroy(&ctx);
+    return (result);
+}
+
+
+int
+test_encode_decrypt_request_payload_NULL(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    // First test is key_uuid=NULL as spec does allow to omit the Unique Identifier
+    // see: https://docs.oasis-open.org/kmip/kmip-spec/v2.0/os/kmip-spec-v2.0-os.html#_Toc6497537
+
+    uint8 expected[] = {
+        0x42, 0x00, 0x79,
+        0x01,
+        0x00, 0x00, 0x00, 0x90,
+        0x42, 0x00, 0x2b,
+        0x01,
+        0x00, 0x00, 0x00, 0x40,
+        0x42, 0x00, 0x11,
+        0x05,
+        0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+        0x42, 0x00, 0x5f,
+        0x05,
+        0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
+        0x42, 0x00, 0x28,
+        0x05,
+        0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
+        0x42, 0x00, 0xc5,
+        0x06,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x42, 0x00, 0xc2,
+        0x08,
+        0x00, 0x00, 0x00, 0x40,
+            0xeb, 0xf6, 0xff, 0xc7, 0x7a, 0xc8, 0x9f, 0x79, 0x38, 0x9f, 0x36, 0xeb, 0xb7, 0xab, 0x41, 0x94,
+            0x7e, 0x3e, 0xb2, 0x43, 0x3e, 0x42, 0x52, 0x94, 0xaf, 0x67, 0x4f, 0x9d, 0x34, 0xcb, 0x35, 0x95,
+            0x39, 0x08, 0x56, 0xdc, 0xbb, 0x29, 0x0e, 0x27, 0xd6, 0x05, 0xf9, 0x04, 0x64, 0xed, 0x79, 0xb5,
+            0x77, 0xc0, 0x28, 0xca, 0xf8, 0x63, 0xfd, 0xcc, 0x43, 0x5b, 0x79, 0x08, 0x80, 0x77, 0x77, 0x50
+    };
+
+    uint8 observed[ARRAY_LENGTH(expected)] = {0};
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, observed, ARRAY_LENGTH(observed), KMIP_1_2);
+
+    /* Test data */
+    uint8 ciphertext[] = {
+        0xeb, 0xf6, 0xff, 0xc7, 0x7a, 0xc8, 0x9f, 0x79, 0x38, 0x9f, 0x36, 0xeb, 0xb7, 0xab, 0x41, 0x94,
+        0x7e, 0x3e, 0xb2, 0x43, 0x3e, 0x42, 0x52, 0x94, 0xaf, 0x67, 0x4f, 0x9d, 0x34, 0xcb, 0x35, 0x95,
+        0x39, 0x08, 0x56, 0xdc, 0xbb, 0x29, 0x0e, 0x27, 0xd6, 0x05, 0xf9, 0x04, 0x64, 0xed, 0x79, 0xb5,
+        0x77, 0xc0, 0x28, 0xca, 0xf8, 0x63, 0xfd, 0xcc, 0x43, 0x5b, 0x79, 0x08, 0x80, 0x77, 0x77, 0x50
+    };
+    int ciphertext_size = ARRAY_LENGTH(ciphertext);
+
+    /* Set up cryptographic parameters */
+    CryptographicParameters params = {0};
+    kmip_init_cryptographic_parameters(&params);
+    params.cryptographic_algorithm = KMIP_CRYPTOALG_AES;
+    params.block_cipher_mode = KMIP_BLOCK_CBC;
+    params.padding_method = KMIP_PAD_PKCS5;
+    params.random_iv = KMIP_TRUE;  /* Request server to generate IV */
+
+    /* Build Decrypt Request Payload */
+    ByteString data = {0};
+    data.value = ciphertext;
+    data.size = ciphertext_size;
+
+    DecryptRequestPayload decrypt_payload = {0};
+    decrypt_payload.unique_identifier = NULL;
+    decrypt_payload.cryptographic_parameters = NULL;
+    decrypt_payload.data = &data;
+    decrypt_payload.iv_counter_nonce = NULL;
+    decrypt_payload.correlation_value = NULL;
+    decrypt_payload.init_indicator = KMIP_UNSET;
+    decrypt_payload.final_indicator = KMIP_UNSET;
+    decrypt_payload.authenticated_encryption_additional_data = NULL;
+    decrypt_payload.authenticated_encryption_tag = NULL;
+
+    // Set crypto parameters
+    decrypt_payload.cryptographic_parameters = &params;
+
+    int result = kmip_encode_decrypt_request_payload(&ctx, &decrypt_payload);
+    result = report_encoding_test_result(tracker, &ctx, expected, observed, result, __func__);
+
+    kmip_destroy(&ctx);
+    return(result);
+}
+
+int
+test_decode_decrypt_response_payload_simple(TestTracker *tracker)
+{
+    TRACK_TEST(tracker);
+
+    uint8 encoding[] = {
+        0x42, 0x00, 0x7C,
+        0x01,
+        0x00, 0x00, 0x00, 0x10,
+            0x42, 0x00, 0x94,
+            0x07,
+            0x00, 0x00, 0x00, 0x01,
+            0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    struct kmip ctx = {0};
+    kmip_init(&ctx, encoding, ARRAY_LENGTH(encoding), KMIP_1_0);
+
+    /* Build Decrypt Response expected payload */
+    char key_uuid[] = "5";
+
+    TextString unique_id = {0};
+    unique_id.value = key_uuid;
+    unique_id.size = kmip_strnlen_s(key_uuid, 36);
+
+    DecryptResponsePayload expected = {0};
+    expected.unique_identifier = &unique_id;
+
+    DecryptResponsePayload observed = {0};
+
+    int result = kmip_decode_decrypt_response_payload(&ctx, &observed);
+    int comparison = kmip_compare_decrypt_response_payload(&expected, &observed);
+    if (!comparison)
+    {
+        kmip_print_decrypt_response_payload(stderr, 1, &observed);
+        kmip_print_decrypt_response_payload(stderr, 1, &expected);
+    }
+    result = report_decoding_test_result(tracker, &ctx, comparison, result, __func__);
+
+    kmip_free_decrypt_response_payload(&ctx, &observed);
+    kmip_destroy(&ctx);
+    return (result);
+}
+
 /*
 The following tests are taken verbatim from the KMIP 1.1 Test Cases
 documentation, available here:
@@ -12942,6 +13432,7 @@ run_tests(void)
     test_linked_list_enqueue(&tracker);
     test_buffer_bytes_left(&tracker);
     test_peek_tag(&tracker);
+    test_skip_tag(&tracker);
     test_is_attribute_tag(&tracker);
     test_get_enum_string_index(&tracker);
     test_check_enum_value_protection_storage_masks(&tracker);
@@ -13031,6 +13522,7 @@ run_tests(void)
     test_decode_object_types(&tracker);
     test_compare_query_functions(&tracker);
     test_decode_query_response_payload(&tracker);
+    test_decode_activate_response_payload(&tracker);
     
     printf("\n");
     test_encode_integer(&tracker);
@@ -13094,7 +13586,10 @@ run_tests(void)
     test_encode_template_attribute(&tracker);
     test_encode_query_functions(&tracker);
     test_encode_query_request_payload(&tracker);
-    
+    test_encode_activate_request_payload_NULL(&tracker);
+    test_encode_activate_request_payload_simple(&tracker);
+
+
     printf("\nKMIP 1.1 Feature Tests\n");
     printf("----------------------\n");
     test_decode_device_credential(&tracker);
@@ -13127,6 +13622,10 @@ run_tests(void)
     test_encode_request_header_with_attestation_details(&tracker);
     test_encode_response_header_with_attestation_details(&tracker);
     test_encode_cryptographic_parameters_with_digital_signature_fields(&tracker);
+    test_encode_encrypt_request_payload_NULL(&tracker);
+    test_encode_decrypt_request_payload_NULL(&tracker);
+    test_decode_encrypt_response_payload_simple(&tracker);
+    test_decode_decrypt_response_payload_simple(&tracker);
     
     printf("\nKMIP 1.4 Feature Tests\n");
     printf("----------------------\n");
