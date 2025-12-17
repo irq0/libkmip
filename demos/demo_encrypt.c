@@ -223,7 +223,8 @@ main(int argc, char **argv)
         &ciphertext,
         &ciphertext_size,
         &iv,
-        &iv_size);
+        &iv_size,
+        NULL,NULL);
 
     if(result != KMIP_OK)
     {
@@ -253,6 +254,7 @@ main(int argc, char **argv)
         0,
         iv,
         iv_size,
+        NULL, 0,
         &params,
         &decrypted,
         &decrypted_size);

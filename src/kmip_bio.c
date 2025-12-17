@@ -1795,7 +1795,9 @@ kmip_bio_encrypt_with_context(
     uint8 **ciphertext,
     int *ciphertext_size,
     uint8 **iv,
-    int *iv_size)
+    int *iv_size,
+    uint8 **tag,
+    int *tag_size)
 {
     if(ctx == NULL || bio == NULL || plaintext == NULL || plaintext_size < 0 || ciphertext == NULL || ciphertext_size == NULL)
     {
@@ -2021,7 +2023,20 @@ kmip_bio_encrypt_with_context(
             kmip_memcpy(ctx, *iv, encrypt_response->iv_counter_nonce->value, *iv_size);
 
         }
-
+        if(encrypt_response->authenticated_encryption_tag != NULL && encrypt_response->authenticated_encryption_tag->value != NULL && encrypt_response->authenticated_encryption_tag->size > 0) {
+          if (tag != NULL) {
+            *tag_size = encrypt_response->authenticated_encryption_tag->size;
+            *tag = ctx->calloc_func(ctx->state, 1, *tag_size);
+            if (*tag == NULL)
+            {
+                kmip_push_error_frame(ctx, __func__, __LINE__);
+                ctx->free_func(ctx->state, response_buffer);
+                kmip_free_response_message(ctx, &response_message);
+                return(KMIP_MEMORY_ALLOC_FAILED);
+            }
+            kmip_memcpy(ctx, *tag, encrypt_response->authenticated_encryption_tag->value, *tag_size);
+          }
+        }
     }
 
     // Clean up the response message, the response buffer, and the KMIP  context.
@@ -2045,6 +2060,8 @@ kmip_bio_decrypt_with_context(
     int additional_data_size,
     uint8 *iv,
     int iv_size,
+    uint8 *tag,
+    int tag_size,
     CryptographicParameters *params,
     uint8 **plaintext,
     int *plaintext_size)
@@ -2092,6 +2109,10 @@ kmip_bio_decrypt_with_context(
     auth_enc_additional_data.value = additional_data;
     auth_enc_additional_data.size = additional_data_size;
 
+    ByteString auth_tag = {0};
+    auth_tag.value = tag;
+    auth_tag.size = tag_size;
+
     ByteString iv_data = {0};
 
     DecryptRequestPayload decrypt_payload = {0};
@@ -2104,7 +2125,8 @@ kmip_bio_decrypt_with_context(
     decrypt_payload.final_indicator = KMIP_UNSET; /* TODO how to implement this? */
     decrypt_payload.authenticated_encryption_additional_data =
         (additional_data != NULL) ? &auth_enc_additional_data : NULL;
-    decrypt_payload.authenticated_encryption_tag = NULL; /* TODO how to implement this? */
+    decrypt_payload.authenticated_encryption_tag =
+        (tag != NULL) ? &auth_tag : NULL;
 
     // Set unique identifier
     if(key_uuid != NULL)
@@ -2288,7 +2310,9 @@ kmip_bio_encrypt(
     uint8 **ciphertext,
     int *ciphertext_size,
     uint8 **iv,
-    int *iv_size)
+    int *iv_size,
+    uint8 **tag,
+    int *tag_size)
 {
     /* Create and initialize context */
     KMIP ctx = {0};
@@ -2308,7 +2332,9 @@ kmip_bio_encrypt(
         ciphertext,
         ciphertext_size,
         iv,
-        iv_size);
+        iv_size,
+        tag,
+        tag_size);
 
     /* Cleanup context */
     kmip_destroy(&ctx);
@@ -2327,6 +2353,8 @@ kmip_bio_decrypt(
     int additional_data_size,
     uint8 *iv,
     int iv_size,
+    uint8 *tag,
+    int tag_size,
     CryptographicParameters *params,
     uint8 **plaintext,
     int *plaintext_size)
@@ -2347,6 +2375,8 @@ kmip_bio_decrypt(
         additional_data_size,
         iv,
         iv_size,
+        tag,
+        tag_size,
         params,
         plaintext,
         plaintext_size);

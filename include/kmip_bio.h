@@ -81,7 +81,9 @@ int kmip_bio_encrypt_with_context(
     uint8 **ciphertext,
     int *ciphertext_size,
     uint8 **iv,
-    int *iv_size
+    int *iv_size,
+    uint8 **tag,
+    int *tag_size
 );
 
 /**
@@ -111,6 +113,8 @@ int kmip_bio_decrypt_with_context(
     int additional_data_size,
     uint8 *iv,
     int iv_size,
+    uint8 *tag,
+    int tag_size,
     CryptographicParameters *params,
     uint8 **plaintext,
     int *plaintext_size
@@ -152,7 +156,9 @@ int kmip_bio_encrypt(
     uint8 **ciphertext,
     int *ciphertext_size,
     uint8 **iv,
-    int *iv_size
+    int *iv_size,
+    uint8 **tag,
+    int *tag_size
 );
 
 /**
@@ -184,6 +190,8 @@ int kmip_bio_decrypt(
     int additional_data_size,
     uint8 *iv,
     int iv_size,
+    uint8 *tag,
+    int tag_size,
     CryptographicParameters *params,
     uint8 **plaintext,
     int *plaintext_size
