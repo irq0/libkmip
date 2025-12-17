@@ -1789,6 +1789,8 @@ kmip_bio_encrypt_with_context(
     int key_uuid_size,
     uint8 *plaintext,
     int plaintext_size,
+    uint8 *additional_data,
+    int additional_data_size,
     CryptographicParameters *params,
     uint8 **ciphertext,
     int *ciphertext_size,
@@ -1833,6 +1835,10 @@ kmip_bio_encrypt_with_context(
     data.value = plaintext;
     data.size = plaintext_size;
 
+    ByteString auth_enc_additional_data = {0};
+    auth_enc_additional_data.value = additional_data;
+    auth_enc_additional_data.size = additional_data_size;
+
     EncryptRequestPayload encrypt_payload = {0};
     encrypt_payload.unique_identifier = NULL;
     encrypt_payload.cryptographic_parameters = NULL;
@@ -1841,7 +1847,8 @@ kmip_bio_encrypt_with_context(
     encrypt_payload.correlation_value = NULL; /* TODO how to implement this? */
     encrypt_payload.init_indicator = KMIP_UNSET; /* TODO how to implement this? */
     encrypt_payload.final_indicator = KMIP_UNSET; /* TODO how to implement this? */
-    encrypt_payload.authenticated_encryption_additional_data = NULL; /* TODO how to implement this? */
+    encrypt_payload.authenticated_encryption_additional_data =
+        (additional_data != NULL) ? &auth_enc_additional_data : NULL;
 
     // Set crypto parameters
     if(params != NULL)
@@ -2034,6 +2041,8 @@ kmip_bio_decrypt_with_context(
     int key_uuid_size,
     uint8 *ciphertext,
     int ciphertext_size,
+    uint8 *additional_data,
+    int additional_data_size,
     uint8 *iv,
     int iv_size,
     CryptographicParameters *params,
@@ -2079,6 +2088,10 @@ kmip_bio_decrypt_with_context(
     data.value = ciphertext;
     data.size = ciphertext_size;
 
+    ByteString auth_enc_additional_data = {0};
+    auth_enc_additional_data.value = additional_data;
+    auth_enc_additional_data.size = additional_data_size;
+
     ByteString iv_data = {0};
 
     DecryptRequestPayload decrypt_payload = {0};
@@ -2089,7 +2102,8 @@ kmip_bio_decrypt_with_context(
     decrypt_payload.correlation_value = NULL; /* TODO how to implement this? */
     decrypt_payload.init_indicator = KMIP_UNSET; /* TODO how to implement this? */
     decrypt_payload.final_indicator = KMIP_UNSET; /* TODO how to implement this? */
-    decrypt_payload.authenticated_encryption_additional_data = NULL; /* TODO how to implement this? */
+    decrypt_payload.authenticated_encryption_additional_data =
+        (additional_data != NULL) ? &auth_enc_additional_data : NULL;
     decrypt_payload.authenticated_encryption_tag = NULL; /* TODO how to implement this? */
 
     // Set unique identifier
@@ -2268,6 +2282,8 @@ kmip_bio_encrypt(
     int key_uuid_size,
     uint8 *plaintext,
     int plaintext_size,
+    uint8 *additional_data,
+    int additional_data_size,
     CryptographicParameters *params,
     uint8 **ciphertext,
     int *ciphertext_size,
@@ -2286,6 +2302,8 @@ kmip_bio_encrypt(
         key_uuid_size,
         plaintext,
         plaintext_size,
+        additional_data,
+        additional_data_size,
         params,
         ciphertext,
         ciphertext_size,
@@ -2305,6 +2323,8 @@ kmip_bio_decrypt(
     int key_uuid_size,
     uint8 *ciphertext,
     int ciphertext_size,
+    uint8 *additional_data,
+    int additional_data_size,
     uint8 *iv,
     int iv_size,
     CryptographicParameters *params,
@@ -2323,6 +2343,8 @@ kmip_bio_decrypt(
         key_uuid_size,
         ciphertext,
         ciphertext_size,
+        additional_data,
+        additional_data_size,
         iv,
         iv_size,
         params,
