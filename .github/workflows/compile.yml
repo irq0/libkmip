@@ -83,6 +83,8 @@ jobs:
 
           demos/demo_encrypt 127.0.0.1 5696 pykmip-test-server/snakeoil.crt pykmip-test-server/snakeoil.key pykmip-test-server/snakeoil.crt $id &> create.log
 
+          demos/demo_encrypt_aead 127.0.0.1 5696 pykmip-test-server/snakeoil.crt pykmip-test-server/snakeoil.key pykmip-test-server/snakeoil.crt $id &> create.log
+
           sleep 2
           pkill uv
           jobs
